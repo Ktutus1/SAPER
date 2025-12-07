@@ -5,13 +5,57 @@
 #include <stdlib.h>
 #include <locale.h>
 
-int main() {
+// Функция для подсчета мин вокруг клетки
+int countMinesAround(int i, int j, int vk_matrix[3][3], int bomb_vk[], int bomb_count) {
+    int mines_count = 0;
 
-    srand(time(0));
-    SetConsoleCP(1251);          
-    SetConsoleOutputCP(1251);    
-    setlocale(LC_ALL, "Russian");
+    // Проверяем все 4 направления (слева, справа, сверху, снизу)
 
+    // Слева
+    if (j > 0) {
+        for (int b = 0; b < bomb_count; b++) {
+            if (vk_matrix[i][j - 1] == bomb_vk[b]) {
+                mines_count++;
+                break;
+            }
+        }
+    }
+
+    // Справа
+    if (j < 2) {
+        for (int b = 0; b < bomb_count; b++) {
+            if (vk_matrix[i][j + 1] == bomb_vk[b]) {
+                mines_count++;
+                break;
+            }
+        }
+    }
+
+    // Сверху
+    if (i > 0) {
+        for (int b = 0; b < bomb_count; b++) {
+            if (vk_matrix[i - 1][j] == bomb_vk[b]) {
+                mines_count++;
+                break;
+            }
+        }
+    }
+
+    // Снизу
+    if (i < 2) {
+        for (int b = 0; b < bomb_count; b++) {
+            if (vk_matrix[i + 1][j] == bomb_vk[b]) {
+                mines_count++;
+                break;
+            }
+        }
+    }
+
+    return mines_count;
+}
+
+// Функция для запуска игры с заданным количеством мин
+void game(int num_mines) {
     int vk_matrix[3][3] = {
         {0x51, 0x57, 0x45},  // Q, W, E
         {0x41, 0x53, 0x44},  // A, S, D
@@ -23,85 +67,118 @@ int main() {
         {'a', 's', 'd'},
         {'z', 'x', 'c'}
     };
-    int bomb_i = NULL;
-    int bomb_j = NULL;
-    int bomb_vk;
-    int bomb_vk2 = NULL;
+
     // Чтение статистики из файла
-    int wins = 0, losses = 0,level;
+    int wins = 0, losses = 0;
     FILE* stats_file = fopen("stats.txt", "r");
     if (stats_file != NULL) {
         fscanf(stats_file, "%d %d", &wins, &losses);
         fclose(stats_file);
     }
-    printf("Выберите уровень сложности(количество мин)\n 1 - одна мина\n 2 - две мины\n");
-    scanf("%d", &level);
-    switch (level) {
-    case 1: 
-        
-        bomb_i = rand() % 3;
-        bomb_j = rand() % 3;
-        bomb_vk  = vk_matrix[bomb_i][bomb_j];
-        break;
-    case 2:
-        bomb_vk;
-        
-        bomb_i = rand() % 3;
-        bomb_j = rand() % 3;
-        bomb_vk = vk_matrix[bomb_i][bomb_j];
-        bomb_i = rand() % 3;
-        bomb_j = rand() % 3;
-        bomb_vk2 = vk_matrix[bomb_i][bomb_j];
-        while (bomb_vk2 == bomb_vk)
-        {
-            bomb_i = rand() % 3;
-            bomb_j = rand() % 3;
-            bomb_vk2 = vk_matrix[bomb_i][bomb_j];
-            break;
-        }
-        break;
 
-    default:printf("Сделайте выбор правильно!");
+    // Создание массива для мин
+    int bomb_vk[9]; // Максимум 9 мин
+    int bomb_count = num_mines;
 
-        return 1;
+    // Генерация уникальных мин
+    for (int b = 0; b < bomb_count; b++) {
+        int new_bomb;
+        int unique;
 
+        do {
+            unique = 1;
+            int bomb_i = rand() % 3;
+            int bomb_j = rand() % 3;
+            new_bomb = vk_matrix[bomb_i][bomb_j];
+
+            // Проверяем, не повторяется ли мина
+            for (int i = 0; i < b; i++) {
+                if (bomb_vk[i] == new_bomb) {
+                    unique = 0;
+                    break;
+                }
+            }
+        } while (!unique);
+
+        bomb_vk[b] = new_bomb;
     }
-
 
     int pressed[3][3] = { {0} };
     int count = 0;
-    
+
+    system("cls");
     printf("Играть на q w e \n");
     printf("          a s d \n");
     printf("          z x c \n");
-    printf("Если вы слышите 1 короткий звук - значит рядом мина\n\n");
+    printf("Если вы слышите 1 короткий звук - значит рядом мина\n");
+    printf("Количество коротких звуков = количество мин рядом\n");
+    printf("Количество мин: %d\n\n", bomb_count);
 
     while (1) {
-
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (GetAsyncKeyState(vk_matrix[i][j]) & 0x8000) {
-
                     while (GetAsyncKeyState(vk_matrix[i][j]) & 0x8000) {
-
+                        // Ждем отпускания клавиши
                     }
 
-                    if (count == 0 && vk_matrix[i][j] == bomb_vk) {
-                        while (vk_matrix[i][j] == bomb_vk) {
-                            bomb_i = rand() % 3;
-                            bomb_j = rand() % 3;
-                            bomb_vk = vk_matrix[bomb_i][bomb_j];
+                    // Если это первое нажатие и нажата мина, переставляем все мины
+                    if (count == 0) {
+                        int is_bomb = 0;
+                        for (int b = 0; b < bomb_count; b++) {
+                            if (vk_matrix[i][j] == bomb_vk[b]) {
+                                is_bomb = 1;
+                                break;
+                            }
+                        }
+
+                        if (is_bomb) {
+                            // Перегенерируем все мины
+                            for (int b = 0; b < bomb_count; b++) {
+                                int new_bomb;
+                                int unique;
+
+                                do {
+                                    unique = 1;
+                                    int bomb_i = rand() % 3;
+                                    int bomb_j = rand() % 3;
+                                    new_bomb = vk_matrix[bomb_i][bomb_j];
+
+                                    // Проверяем, не повторяется ли мина и не нажата ли она
+                                    for (int k = 0; k < b; k++) {
+                                        if (bomb_vk[k] == new_bomb) {
+                                            unique = 0;
+                                            break;
+                                        }
+                                    }
+
+                                    // Проверяем, не нажата ли эта клавиша
+                                    if (new_bomb == vk_matrix[i][j]) {
+                                        unique = 0;
+                                    }
+                                } while (!unique);
+
+                                bomb_vk[b] = new_bomb;
+                            }
                         }
                     }
 
-                    if (vk_matrix[i][j] == bomb_vk || vk_matrix[i][j] == bomb_vk2) {
+                    // Проверяем, не мина ли это
+                    int is_bomb = 0;
+                    for (int b = 0; b < bomb_count; b++) {
+                        if (vk_matrix[i][j] == bomb_vk[b]) {
+                            is_bomb = 1;
+                            break;
+                        }
+                    }
+
+                    if (is_bomb) {
                         Beep(1000, 1500);
                         printf("ВЗРЫВ\n");
 
-
                         losses++;
 
-
+                        // Сохраняем статистику
                         stats_file = fopen("stats.txt", "w");
                         if (stats_file != NULL) {
                             fprintf(stats_file, "%d %d", wins, losses);
@@ -110,84 +187,70 @@ int main() {
 
                         printf("ВЫ ПРОИГРАЛИ! побед:%d поражений:%d \n", wins, losses);
                         system("pause");
-                        return 0;
+                        return;
                     }
 
                     if (!pressed[i][j]) {
-                       
+                        // Подсчитываем количество мин вокруг
+                        int mines_around = countMinesAround(i, j, vk_matrix, bomb_vk, bomb_count);
 
-
-                        if ((j > 0 && vk_matrix[i][j - 1] == bomb_vk) || (j > 0 && vk_matrix[i][j - 1] == bomb_vk2)) {
-                            Beep(800, 200);
-                        }
-                        // Справа
-                        else if ((j < 2 && vk_matrix[i][j + 1] == bomb_vk) || (j < 2 && vk_matrix[i][j + 1] == bomb_vk2)) {
-                            Beep(800, 200);
-                        }
-
-                        else if ((i > 0 && vk_matrix[i - 1][j] == bomb_vk) || (i > 0 && vk_matrix[i - 1][j] == bomb_vk2)) {
-                            Beep(800, 200);
-                        }
-
-                        else if ((i < 2 && vk_matrix[i + 1][j] == bomb_vk)  || (i < 2 && vk_matrix[i + 1][j] == bomb_vk2)) {
-                            Beep(800, 200);
+                        // Пищим столько раз, сколько мин вокруг
+                        if (mines_around > 0) {
+                            for (int k = 0; k < mines_around; k++) {
+                                Beep(800, 200);
+                                Sleep(100); // Пауза между звуками
+                            }
                         }
 
                         pressed[i][j] = 1;
                         count++;
-                        
                     }
-                    else
-                    {
+                    else {
+                        // Если клетка уже нажата, все равно показываем сколько мин вокруг
+                        int mines_around = countMinesAround(i, j, vk_matrix, bomb_vk, bomb_count);
 
-                        if ((j > 0 && vk_matrix[i][j - 1] == bomb_vk) || (j > 0 && vk_matrix[i][j - 1] == bomb_vk2)) {
-                            Beep(800, 200);
-                        }
-
-                        else if ((j < 2 && vk_matrix[i][j + 1] == bomb_vk) || (j < 2 && vk_matrix[i][j + 1] == bomb_vk2)) {
-                            Beep(800, 200);
-                        }
-
-                        else if ((i > 0 && vk_matrix[i - 1][j] == bomb_vk) || (i > 0 && vk_matrix[i - 1][j] == bomb_vk2)) {
-                            Beep(800, 200);
-                        }
-
-                        else if ((i < 2 && vk_matrix[i + 1][j] == bomb_vk) || (i < 2 && vk_matrix[i + 1][j] == bomb_vk2)) {
-                            Beep(800, 200);
+                        // Пищим столько раз, сколько мин вокруг
+                        if (mines_around > 0) {
+                            for (int k = 0; k < mines_around; k++) {
+                                Beep(800, 200);
+                                Sleep(100); // Пауза между звуками
+                            }
                         }
                     }
+
                     system("cls");
                     printf("Играть на q w e \n");
                     printf("          a s d \n");
                     printf("          z x c \n");
-                    printf("Если вы слышите 1 короткий звук - значит рядом бомба\n\n");
+                    printf("Если вы слышите 1 короткий звук - значит рядом мина\n");
+                    printf("Количество коротких звуков = количество мин рядом\n");
+                    printf("Количество мин: %d\n\n", bomb_count);
+
                     for (int i = 0; i < 3; i++) {
                         for (int j = 0; j < 3; j++) {
                             if (pressed[i][j]) {
-                                
                                 printf("%c| ", char_matrix[i][j]);
                             }
                             else {
                                 printf("*| ");
                             }
-                            
                         }
                         printf("\n");
                     }
                     break;
                 }
             }
-
         }
 
-        if (count == 9 - level) {
+        if (count == 9 - bomb_count) {
+           
             Beep(1000, 300);
-            Beep(1000, 300);
-            Beep(1000, 300);
+            
+            Beep(1200, 300);
 
+            Beep(1000, 500);
 
             wins++;
-
 
             stats_file = fopen("stats.txt", "w");
             if (stats_file != NULL) {
@@ -196,9 +259,54 @@ int main() {
             }
 
             printf("ВЫ ПОБЕДИЛИ!!! побед:%d поражений:%d \n", wins, losses);
+
+            // Показываем где были мины
+            printf("Мины были на: ");
+            for (int b = 0; b < bomb_count; b++) {
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        if (vk_matrix[i][j] == bomb_vk[b]) {
+                            printf("%c ", char_matrix[i][j]);
+                        }
+                    }
+                }
+            }
+            printf("\n");
+
             system("pause");
-            return 0;
+            return;
         }
+    }
+}
+
+int main() {
+    srand(time(0));
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
+    setlocale(LC_ALL, "Russian");
+
+    int level;
+
+    printf("Выберите уровень сложности(количество мин)\n");
+    printf("1 - одна мина\n");
+    printf("2 - две мины\n");
+    printf("3 - три мины\n");
+    scanf("%d", &level);
+
+    switch (level) {
+    case 1:
+        game(1);
+        break;
+    case 2:
+        game(2);
+        break;
+    case 3:
+        game(3);
+        break;
+    default:
+        printf("Сделайте выбор правильно!\n");
+        system("pause");
+        return 1;
     }
 
     return 0;
