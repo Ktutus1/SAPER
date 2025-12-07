@@ -8,8 +8,8 @@
 int main() {
 
     srand(time(0));
-    SetConsoleCP(1251);          // Установка кодовой страницы ввода
-    SetConsoleOutputCP(1251);    // Установка кодовой страницы вывода
+    SetConsoleCP(1251);          
+    SetConsoleOutputCP(1251);    
     setlocale(LC_ALL, "Russian");
 
     int vk_matrix[3][3] = {
@@ -23,26 +23,58 @@ int main() {
         {'a', 's', 'd'},
         {'z', 'x', 'c'}
     };
-
+    int bomb_i = NULL;
+    int bomb_j = NULL;
+    int bomb_vk;
+    int bomb_vk2 = NULL;
     // Чтение статистики из файла
-    int wins = 0, losses = 0;
+    int wins = 0, losses = 0,level;
     FILE* stats_file = fopen("stats.txt", "r");
     if (stats_file != NULL) {
         fscanf(stats_file, "%d %d", &wins, &losses);
         fclose(stats_file);
     }
+    printf("Выберите уровень сложности(количество мин)\n 1 - одна мина\n 2 - две мины\n");
+    scanf("%d", &level);
+    switch (level) {
+    case 1: 
+        
+        bomb_i = rand() % 3;
+        bomb_j = rand() % 3;
+        bomb_vk  = vk_matrix[bomb_i][bomb_j];
+        break;
+    case 2:
+        bomb_vk;
+        
+        bomb_i = rand() % 3;
+        bomb_j = rand() % 3;
+        bomb_vk = vk_matrix[bomb_i][bomb_j];
+        bomb_i = rand() % 3;
+        bomb_j = rand() % 3;
+        bomb_vk2 = vk_matrix[bomb_i][bomb_j];
+        while (bomb_vk2 == bomb_vk)
+        {
+            bomb_i = rand() % 3;
+            bomb_j = rand() % 3;
+            bomb_vk2 = vk_matrix[bomb_i][bomb_j];
+            break;
+        }
+        break;
 
-    int bomb_i = rand() % 3;
-    int bomb_j = rand() % 3;
-    int bomb_vk = vk_matrix[bomb_i][bomb_j];
+    default:printf("Сделайте выбор правильно!");
+
+        return 1;
+
+    }
+
 
     int pressed[3][3] = { {0} };
     int count = 0;
-
+    
     printf("Играть на q w e \n");
     printf("          a s d \n");
     printf("          z x c \n");
-    printf("Если вы слышите 1 короткий звук - значит рядом бомба\n\n");
+    printf("Если вы слышите 1 короткий звук - значит рядом мина\n\n");
 
     while (1) {
 
@@ -62,7 +94,7 @@ int main() {
                         }
                     }
 
-                    if (vk_matrix[i][j] == bomb_vk) {
+                    if (vk_matrix[i][j] == bomb_vk || vk_matrix[i][j] == bomb_vk2) {
                         Beep(1000, 1500);
                         printf("ВЗРЫВ\n");
 
@@ -82,52 +114,73 @@ int main() {
                     }
 
                     if (!pressed[i][j]) {
-                        printf("нажато:%c\n", char_matrix[i][j]);
+                       
 
 
-                        if (j > 0 && vk_matrix[i][j - 1] == bomb_vk) {
+                        if ((j > 0 && vk_matrix[i][j - 1] == bomb_vk) || (j > 0 && vk_matrix[i][j - 1] == bomb_vk2)) {
                             Beep(800, 200);
                         }
                         // Справа
-                        else if (j < 2 && vk_matrix[i][j + 1] == bomb_vk) {
+                        else if ((j < 2 && vk_matrix[i][j + 1] == bomb_vk) || (j < 2 && vk_matrix[i][j + 1] == bomb_vk2)) {
                             Beep(800, 200);
                         }
 
-                        else if (i > 0 && vk_matrix[i - 1][j] == bomb_vk) {
+                        else if ((i > 0 && vk_matrix[i - 1][j] == bomb_vk) || (i > 0 && vk_matrix[i - 1][j] == bomb_vk2)) {
                             Beep(800, 200);
                         }
 
-                        else if (i < 2 && vk_matrix[i + 1][j] == bomb_vk) {
+                        else if ((i < 2 && vk_matrix[i + 1][j] == bomb_vk)  || (i < 2 && vk_matrix[i + 1][j] == bomb_vk2)) {
                             Beep(800, 200);
                         }
 
                         pressed[i][j] = 1;
                         count++;
-                        printf("Вы нажали %d/8 \n", count);
+                        
                     }
                     else
                     {
 
-                        if (j > 0 && vk_matrix[i][j - 1] == bomb_vk) {
+                        if ((j > 0 && vk_matrix[i][j - 1] == bomb_vk) || (j > 0 && vk_matrix[i][j - 1] == bomb_vk2)) {
                             Beep(800, 200);
                         }
-                        else if (j < 2 && vk_matrix[i][j + 1] == bomb_vk) {
+
+                        else if ((j < 2 && vk_matrix[i][j + 1] == bomb_vk) || (j < 2 && vk_matrix[i][j + 1] == bomb_vk2)) {
                             Beep(800, 200);
                         }
-                        else if (i > 0 && vk_matrix[i - 1][j] == bomb_vk) {
+
+                        else if ((i > 0 && vk_matrix[i - 1][j] == bomb_vk) || (i > 0 && vk_matrix[i - 1][j] == bomb_vk2)) {
                             Beep(800, 200);
                         }
-                        else if (i < 2 && vk_matrix[i + 1][j] == bomb_vk) {
+
+                        else if ((i < 2 && vk_matrix[i + 1][j] == bomb_vk) || (i < 2 && vk_matrix[i + 1][j] == bomb_vk2)) {
                             Beep(800, 200);
                         }
                     }
-
+                    system("cls");
+                    printf("Играть на q w e \n");
+                    printf("          a s d \n");
+                    printf("          z x c \n");
+                    printf("Если вы слышите 1 короткий звук - значит рядом бомба\n\n");
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            if (pressed[i][j]) {
+                                
+                                printf("%c| ", char_matrix[i][j]);
+                            }
+                            else {
+                                printf("*| ");
+                            }
+                            
+                        }
+                        printf("\n");
+                    }
                     break;
                 }
             }
+
         }
 
-        if (count == 8) {
+        if (count == 9 - level) {
             Beep(1000, 300);
             Beep(1000, 300);
             Beep(1000, 300);
